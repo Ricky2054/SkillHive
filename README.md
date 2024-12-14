@@ -26,7 +26,6 @@ This project aims to provide gig workers with a lightweight AI-powered platform 
    ```bash
    git clone https://github.com/your-repo/skillhive.git
 ## Authors
-
 - [@Ricky Dey](https://github.com/Ricky2054)
 - [@Sorbojit Mondal](https://github.com/33sorbojitmondal)
 - [@Anurag Dey](https://github.com/anuragcode-16)
