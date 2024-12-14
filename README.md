@@ -32,5 +32,3 @@ This project aims to provide gig workers with a lightweight AI-powered platform 
 - [@Anurag Dey](https://github.com/anuragcode-16)
 - [@Ashutosh Saha](https://github.com/Ash310u)
 - [@Piyush Goenka](https://github.com/piyushgoenka2005)
-hi
-
