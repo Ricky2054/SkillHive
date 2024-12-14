@@ -134,7 +134,7 @@ def analyze_email_content(email_body):
 def generate_suggestions_from_gemini(insights):
     try:
         # Configure the Gemini API
-        genai.configure(api_key='AIzaSyCjk3DQoGz-ChVqmuqDwEG9_WrmeFDak4U')
+        genai.configure(api_key=GEMINI_API_KEY)
         model = genai.GenerativeModel('gemini-pro')
         
         # Structured prompt template
