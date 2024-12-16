@@ -3,14 +3,16 @@ import axios from 'axios';
 
 export async function getVideos(query, method, maxResults) {
   try {
-    const response = await axios.get(YOUTUBE_SEARCH_URL,
+     // https://www.googleapis.com/youtube/v3/search?part=snippet&q=programming&maxResults=10&type=video&order=viewCount&key=YOUR_API_KEY
+     const response = await axios.get(YOUTUBE_SEARCH_URL,
       {
         params: {
           part: 'snippet',
           q: query + method,
-          maxResults: maxResults,
-          key: YOUTUBE_API_KEY,
-          type: 'video'
+          maxResults: 10,
+          type: 'video',
+          order: 'viewCount',
+          key: YOUTUBE_API_KEY, 
         }
       });
     const videos = response.data.items.map((video) => {
