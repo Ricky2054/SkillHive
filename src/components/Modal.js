@@ -50,7 +50,6 @@ function Modal({ videoUrl, topics, onClose }) {
               src={embedUrl}
               title="Video Player"
               className="absolute top-0 left-0 w-full h-full rounded-lg"
-              frameBorder="0"
               allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
             ></iframe>

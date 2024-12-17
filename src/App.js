@@ -1,21 +1,15 @@
-import React, { useState } from 'react';
-import Navbar from './components/Navbar';
-import VideoCard from './components/VideoCard';
 import './App.css';
+import Route from './features/Route';
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
 
 function App() {
-  const [searchTerm, setSearchTerm] = useState('');
-
-  const handleSearch = (term) => {
-    setSearchTerm(term);
-  };
-
   return (
-    <div className="bg-black min-h-screen">
-      <Navbar onSearch={handleSearch} />
-      <div className="pt-16">
-        <VideoCard topics={searchTerm} />
-      </div>
+    <div className="bg-zinc-50 w-screen h-screen flex flex-col justify-center items-center">
+      <Route path="/">
+        <Route path="/"><Login /></Route>
+        {/* <Route path="/dashboard"><Dashboard /></Route> */}
+      </Route>
     </div>
   );
 }

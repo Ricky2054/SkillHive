@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { CiSearch } from "react-icons/ci";
 import { generateQuestions } from "../hooks/generateQuestions";
+import { generateMCQs } from "../hooks/mcqQuestions";
 
 function Searchbar({ onSearch }) {
   const [topics, setTopics] = useState('');
@@ -26,6 +27,12 @@ function Searchbar({ onSearch }) {
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') {
       handleSearch();
+      let f = async () => {
+        const questions = await generateMCQs("C language");
+        console.log(questions);
+      }
+      
+      f();
     }
   };
 
