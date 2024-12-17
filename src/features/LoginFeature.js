@@ -15,8 +15,6 @@ const LoginFeature = () => {
         e.preventDefault();
         if (isSignUp) {
             const user = {
-                username: `@${e.target.username.value}`,
-                name: e.target.name.value,
                 email: e.target.email.value,
                 password: e.target.password.value,
             };

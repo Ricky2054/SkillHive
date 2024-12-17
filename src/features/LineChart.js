@@ -32,18 +32,20 @@ const GrowingLineChart = () => {
         scales: {
             x: {
                 ticks: {
-                    color: "rgba(70, 130, 180, 1)", // Steel Blue for x-axis
+                    color: "rgba(70, 130, 180, 1)",
                 },
                 grid: {
-                    color: "rgba(173, 216, 230, 0.2)", // Light Blue grid lines
+                    color: "rgba(135, 206, 250, 0.3)",
+                    lineWidth: 1,
                 },
             },
             y: {
                 ticks: {
-                    color: "rgba(70, 130, 180, 1)", // Steel Blue for y-axis
+                    color: "rgba(70, 130, 180, 1)",
                 },
                 grid: {
-                    color: "rgba(173, 216, 230, 0.2)", // Light Blue grid lines
+                    color: "rgba(135, 206, 250, 0.3)",
+                    lineWidth: 1,
                 },
             },
         },

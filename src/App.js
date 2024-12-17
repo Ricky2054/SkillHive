@@ -8,7 +8,7 @@ function App() {
     <div className="bg-zinc-50 w-screen h-screen flex flex-col justify-center items-center">
       <Route path="/">
         <Route path="/"><Login /></Route>
-        {/* <Route path="/dashboard"><Dashboard /></Route> */}
+        <Route path="/dashboard"><Dashboard /></Route>
       </Route>
     </div>
   );
