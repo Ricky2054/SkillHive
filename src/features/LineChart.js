@@ -32,6 +32,7 @@ const GrowingLineChart = () => {
         scales: {
             x: {
                 ticks: {
+                    display: false,
                     color: "rgba(70, 130, 180, 1)",
                 },
                 grid: {
@@ -41,6 +42,7 @@ const GrowingLineChart = () => {
             },
             y: {
                 ticks: {
+                    display: false,
                     color: "rgba(70, 130, 180, 1)",
                 },
                 grid: {
@@ -57,7 +59,7 @@ const GrowingLineChart = () => {
 
     useEffect(() => {
         const labels = ["Jan, 2022", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan, 2023", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan, 2024", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-        const data = [0, 4, 8, 12, 20, 52, 60, 74, 43, 73, 102, 319, 210, 401, 280, 72, 110, 152, 160, 174, 143, 173, 212, 319, 12, 114, 58, 62, 70, 52, 30, 74, 53, 123, 192, 410];
+        const data = [50, 54, 58, 62, 70, 102, 110, 124, 93, 123, 152, 369, 260, 451, 330, 122, 160, 202, 210, 224, 193, 223, 262, 369, 62, 164, 108, 112, 120, 102, 80, 124, 103, 173, 242, 460];
         let index = 0;
 
         const interval = setInterval(() => {
@@ -83,8 +85,6 @@ const GrowingLineChart = () => {
     return (
         <div
             style={{
-                padding: "20px",
-                borderRadius: "10px",
                 boxShadow: "0 4px 10px rgba(0, 0, 0, 0.1)",
             }}
         >

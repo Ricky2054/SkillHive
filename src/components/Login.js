@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { AiOutlineLoading } from "react-icons/ai";
-import Input from "../components/Input";
+import Input from "./Input";
 import { FaArrowsRotate } from "react-icons/fa6";
 import useNavigation from "../hooks/useNavigation";
 

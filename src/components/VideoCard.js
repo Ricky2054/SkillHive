@@ -76,12 +76,12 @@ function VideoCard({ topics: initialTopics }) {
   }
 
   return (
-    <div className="flex justify-center items-center py-8 px-4 bg-black min-h-screen">
+    <div className="flex justify-center items-center py-8 px-4 bg-zinc-50 h-full">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 max-w-max w-full">
         {videos.map((video, index) => (
           <div
             key={index}
-            className="max-w-sm bg-slate-950 rounded-lg overflow-hidden shadow-lg transform transition duration-500 hover:scale-105 cursor-pointer"
+            className="max-w-sm bg-zinc-50 rounded-lg overflow-hidden shadow-lg transform transition duration-500 hover:scale-105 cursor-pointer"
             onClick={() => handleVideoClick(video.url)}
           >
             <img src={video.thumbnail} alt={video.title} className="w-full h-48 object-cover" />
