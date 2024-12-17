@@ -59,7 +59,7 @@ const GrowingLineChart = () => {
 
     useEffect(() => {
         const labels = ["Jan, 2022", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan, 2023", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan, 2024", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-        const data = [50, 54, 58, 62, 70, 102, 110, 124, 93, 123, 152, 369, 260, 451, 330, 122, 160, 202, 210, 224, 193, 223, 262, 369, 62, 164, 108, 112, 120, 102, 80, 124, 103, 173, 242, 460];
+        const data = [100, 104, 108, 112, 120, 152, 160, 174, 143, 173, 202, 419, 310, 501, 380, 172, 210, 252, 260, 274, 243, 273, 312, 419, 112, 214, 158, 162, 170, 152, 130, 174, 153, 223, 292, 510];
         let index = 0;
 
         const interval = setInterval(() => {
