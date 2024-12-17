@@ -1,4 +1,28 @@
 import { useState } from 'react';
+import { Line, Doughnut } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement,
+} from 'chart.js';
+
+// Register ChartJS components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement
+);
 
 // Dummy user data
 const userData = {
@@ -7,15 +31,88 @@ const userData = {
   joinDate: "December 2024",
   stack: ["React", "Node.js", "MongoDB", "TypeScript"],
   profilePicture: "https://avatars.githubusercontent.com/u/107404699?v=4",
-  yearsActive: 1
+  yearsActive: 1,
+  mcqStats: {
+    monthly: {
+      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+      questions: [25, 45, 32, 67, 49, 83],
+      accuracy: [65, 70, 75, 68, 72, 80]
+    },
+    overall: {
+      totalQuestions: 301,
+      correctAnswers: 228,
+      wrongAnswers: 73
+    }
+  }
 };
 
 const Profile = () => {
   const [isEditingUsername, setIsEditingUsername] = useState(false);
+  const [isEditingEmail, setIsEditingEmail] = useState(false);
   const [isEditingPassword, setIsEditingPassword] = useState(false);
+  const [username, setUsername] = useState(userData.username);
+  const [email, setEmail] = useState(userData.email);
+
+  // Chart configurations
+  const lineChartOptions = {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: 'top',
+      },
+      title: {
+        display: true,
+        text: 'Monthly MCQ Performance'
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true
+      }
+    }
+  };
+
+  const lineChartData = {
+    labels: userData.mcqStats.monthly.labels,
+    datasets: [
+      {
+        label: 'Questions Attempted',
+        data: userData.mcqStats.monthly.questions,
+        borderColor: 'rgb(75, 192, 192)',
+        tension: 0.1
+      },
+      {
+        label: 'Accuracy (%)',
+        data: userData.mcqStats.monthly.accuracy,
+        borderColor: 'rgb(255, 99, 132)',
+        tension: 0.1
+      }
+    ]
+  };
+
+  const doughnutChartData = {
+    labels: ['Correct', 'Wrong'],
+    datasets: [
+      {
+        data: [
+          userData.mcqStats.overall.correctAnswers,
+          userData.mcqStats.overall.wrongAnswers
+        ],
+        backgroundColor: [
+          'rgba(75, 192, 192, 0.8)',
+          'rgba(255, 99, 132, 0.8)'
+        ],
+        borderColor: [
+          'rgba(75, 192, 192, 1)',
+          'rgba(255, 99, 132, 1)'
+        ],
+        borderWidth: 1
+      }
+    ]
+  };
 
   return (
-    <div className="bg-zinc-50 min-h-screen p-8">
+    <div className="bg-zinc-50 h-full p-8 overflow-auto">
       <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-6">
         {/* Header Section */}
         <div className="flex items-center space-x-6 mb-8">
@@ -25,7 +122,7 @@ const Profile = () => {
             className="w-32 h-32 rounded-full object-cover border-4 border-blue-500"
           />
           <div>
-            <h1 className="text-3xl font-bold text-gray-800">{userData.username}</h1>
+            <h1 className="text-3xl font-bold text-gray-800">{username}</h1>
             <p className="text-gray-600">Active since {userData.joinDate}</p>
           </div>
         </div>
@@ -34,10 +131,85 @@ const Profile = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <div className="space-y-4">
             <h2 className="text-xl font-semibold text-gray-800">Account Details</h2>
-            <div>
-              <p className="text-gray-600">Email</p>
-              <p className="font-medium">{userData.email}</p>
+            
+            {/* Username Field */}
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600">Username</p>
+                {isEditingUsername ? (
+                  <div className="flex items-center gap-2">
+                    <input 
+                      type="text" 
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      className="border p-1 rounded"
+                    />
+                    <button 
+                      onClick={() => setIsEditingUsername(false)}
+                      className="px-2 py-1 bg-blue-500 text-white rounded text-sm"
+                    >
+                      Save
+                    </button>
+                    <button 
+                      onClick={() => setIsEditingUsername(false)}
+                      className="px-2 py-1 bg-gray-300 text-gray-700 rounded text-sm"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium">{username}</p>
+                    <button 
+                      onClick={() => setIsEditingUsername(true)}
+                      className="text-blue-500 text-sm"
+                    >
+                      Edit
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
+
+            {/* Email Field */}
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600">Email</p>
+                {isEditingEmail ? (
+                  <div className="flex items-center gap-2">
+                    <input 
+                      type="email" 
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="border p-1 rounded"
+                    />
+                    <button 
+                      onClick={() => setIsEditingEmail(false)}
+                      className="px-2 py-1 bg-blue-500 text-white rounded text-sm"
+                    >
+                      Save
+                    </button>
+                    <button 
+                      onClick={() => setIsEditingEmail(false)}
+                      className="px-2 py-1 bg-gray-300 text-gray-700 rounded text-sm"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium">{email}</p>
+                    <button 
+                      onClick={() => setIsEditingEmail(true)}
+                      className="text-blue-500 text-sm"
+                    >
+                      Edit
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
             <div>
               <p className="text-gray-600">Years Active</p>
               <p className="font-medium">{userData.yearsActive} years</p>
@@ -59,43 +231,9 @@ const Profile = () => {
           </div>
         </div>
 
-        {/* Account Settings Section */}
+        {/* Password Change Section */}
         <div className="border-t pt-6">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">Account Settings</h2>
-          
-          {/* Change Username */}
-          <div className="mb-4">
-            {isEditingUsername ? (
-              <div className="flex items-center space-x-2">
-                <input 
-                  type="text" 
-                  placeholder="New username"
-                  className="border p-2 rounded"
-                />
-                <button 
-                  onClick={() => setIsEditingUsername(false)}
-                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                >
-                  Save
-                </button>
-                <button 
-                  onClick={() => setIsEditingUsername(false)}
-                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
-                >
-                  Cancel
-                </button>
-              </div>
-            ) : (
-              <button 
-                onClick={() => setIsEditingUsername(true)}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
-              >
-                Change Username
-              </button>
-            )}
-          </div>
-
-          {/* Change Password */}
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">Security</h2>
           <div>
             {isEditingPassword ? (
               <div className="space-y-2">
@@ -137,6 +275,36 @@ const Profile = () => {
                 Change Password
               </button>
             )}
+          </div>
+        </div>
+
+        {/* MCQ Statistics Section */}
+        <div className="border-t pt-6 mt-6">
+          <h2 className="text-xl font-semibold text-gray-800 mb-6">MCQ Performance</h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Monthly Performance Chart */}
+            <div className="bg-white p-4 rounded-lg shadow">
+              <Line options={lineChartOptions} data={lineChartData} />
+            </div>
+
+            {/* Overall Accuracy Chart */}
+            <div className="bg-white p-4 rounded-lg shadow">
+              <h3 className="text-lg font-medium text-gray-700 mb-4 text-center">
+                Overall Accuracy
+              </h3>
+              <div className="w-3/4 mx-auto">
+                <Doughnut data={doughnutChartData} />
+              </div>
+              <div className="mt-4 text-center">
+                <p className="text-sm text-gray-600">
+                  Total Questions: {userData.mcqStats.overall.totalQuestions}
+                </p>
+                <p className="text-sm text-gray-600">
+                  Accuracy Rate: {Math.round((userData.mcqStats.overall.correctAnswers / userData.mcqStats.overall.totalQuestions) * 100)}%
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
