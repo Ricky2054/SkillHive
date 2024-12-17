@@ -62,12 +62,27 @@ const Profile = () => {
       },
       title: {
         display: true,
-        text: 'Monthly MCQ Performance'
+        text: 'Monthly Quiz Performance',
+        color: '#0f172a'
       }
     },
     scales: {
       y: {
-        beginAtZero: true
+        beginAtZero: true,
+        grid: {
+          color: 'rgba(30, 58, 138, 0.1)'
+        },
+        ticks: {
+          color: '#1e3a8a'
+        }
+      },
+      x: {
+        grid: {
+          color: 'rgba(30, 58, 138, 0.1)'
+        },
+        ticks: {
+          color: '#1e3a8a'
+        }
       }
     }
   };
@@ -78,14 +93,18 @@ const Profile = () => {
       {
         label: 'Questions Attempted',
         data: userData.mcqStats.monthly.questions,
-        borderColor: 'rgb(75, 192, 192)',
-        tension: 0.1
+        borderColor: '#3b82f6',
+        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+        tension: 0.1,
+        fill: true
       },
       {
         label: 'Accuracy (%)',
         data: userData.mcqStats.monthly.accuracy,
-        borderColor: 'rgb(255, 99, 132)',
-        tension: 0.1
+        borderColor: '#0ea5e9',
+        backgroundColor: 'rgba(14, 165, 233, 0.2)',
+        tension: 0.1,
+        fill: true
       }
     ]
   };
@@ -99,12 +118,12 @@ const Profile = () => {
           userData.mcqStats.overall.wrongAnswers
         ],
         backgroundColor: [
-          'rgba(75, 192, 192, 0.8)',
-          'rgba(255, 99, 132, 0.8)'
+          'rgba(37, 99, 235, 0.9)',
+          'rgba(96, 165, 250, 0.6)'
         ],
         borderColor: [
-          'rgba(75, 192, 192, 1)',
-          'rgba(255, 99, 132, 1)'
+          '#2563eb',
+          '#60a5fa'
         ],
         borderWidth: 1
       }
@@ -290,17 +309,17 @@ const Profile = () => {
 
             {/* Overall Accuracy Chart */}
             <div className="bg-white p-4 rounded-lg shadow">
-              <h3 className="text-lg font-medium text-gray-700 mb-4 text-center">
+              <h3 className="text-lg font-medium text-blue-800 mb-4 text-center">
                 Overall Accuracy
               </h3>
               <div className="w-3/4 mx-auto">
                 <Doughnut data={doughnutChartData} />
               </div>
               <div className="mt-4 text-center">
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-blue-700">
                   Total Questions: {userData.mcqStats.overall.totalQuestions}
                 </p>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-blue-700">
                   Accuracy Rate: {Math.round((userData.mcqStats.overall.correctAnswers / userData.mcqStats.overall.totalQuestions) * 100)}%
                 </p>
               </div>
