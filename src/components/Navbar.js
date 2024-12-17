@@ -1,7 +1,30 @@
 import Link from '../features/Link';
 // import Searchbar from './Searc`hbar';
 
-function Navbar({ onSearch }) {
+const navLinks = [
+  {
+    path: '/login',
+    name: 'Login'
+  },
+  {
+    path: '/dashboard',
+    name: 'Dashboard'
+  },
+  {
+    path: '/about',
+    name: 'About'
+  },
+  {
+    path: '/learning',
+    name: 'Learning'
+  },
+  {
+    path: '/profile',
+    name: 'Profile'
+  }
+];
+
+const Navbar = ({ onSearch }) => {
   return (
     <div className="flex flex-row justify-between items-center bg-gradient-to-r to-blue-400 via-blue-600 from-gray-900 py-3 px-5 w-full">
         <div className="font-bold text-3xl text-slate-200">
@@ -9,24 +32,14 @@ function Navbar({ onSearch }) {
         </div>
         {/* <Searchbar onSearch={onSearch} /> */}
         <div className="flex flex-row justify-between w-1/4 font-medium text-white">
-            <Link to="/login">
-                Login 
-            </Link>
-            <Link to="/dashboard">
-                Dashboard
-            </Link>
-            <Link to="/about">
-                About
-            </Link>
-            <Link to="/learning">
-                Learning
-            </Link>
-              <Link to="/profile">
-                Profile
-            </Link>
+            {navLinks.map((link, index) => (
+              <Link key={index} to={link.path}>
+                {link.name}
+              </Link>
+            ))}
         </div>
     </div>
   );
-}
+};
 
 export default Navbar; 
