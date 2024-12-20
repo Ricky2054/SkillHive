@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { CiSearch } from "react-icons/ci";
-import { generateQuestions } from "../hooks/generateQuestions";
 import { generateMCQs } from "../hooks/mcqQuestions";
 
 function Searchbar({ onSearch }) {
@@ -13,7 +12,6 @@ function Searchbar({ onSearch }) {
       setLoading(true);
       setError(null);
       try {
-        await generateQuestions(topics);
         onSearch(topics);
       } catch (err) {
         console.error('Error while generating questions:', err);
@@ -29,7 +27,7 @@ function Searchbar({ onSearch }) {
       handleSearch();
       let f = async () => {
         const questions = await generateMCQs("C language");
-        console.log(questions);
+        // console.log(questions);
       }
       
       f();

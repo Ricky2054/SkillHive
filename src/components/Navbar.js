@@ -1,5 +1,4 @@
 import Link from '../features/Link';
-// import Searchbar from './Searc`hbar';
 
 const navLinks = [
   {
@@ -30,7 +29,6 @@ const Navbar = ({ onSearch }) => {
         <div className="font-bold text-3xl text-slate-200">
           Skill Hive
         </div>
-        {/* <Searchbar onSearch={onSearch} /> */}
         <div className="flex flex-row justify-between w-1/4 font-medium text-white">
             {navLinks.map((link, index) => (
               <Link key={index} to={link.path}>
