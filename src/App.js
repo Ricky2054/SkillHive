@@ -18,7 +18,7 @@ function App() {
   return (
     <div className="bg-zinc-50 w-screen h-screen flex flex-col flex-1justify-between">
       <Navbar/>
-      <div className="flex flex-col justify-between overflow-hidden">
+      <div className="flex flex-col justify-between overflow-hidden overflow-y-hidden">
         <Route path="/login"><Login /></Route>
         <Route path="/dashboard"><Dashboard /></Route>
         <Route path="/about"><About /></Route>

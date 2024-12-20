@@ -31,7 +31,7 @@ const Navbar = ({ onSearch }) => {
         </div>
         <div className="flex flex-row justify-between w-1/4 font-medium text-white">
             {navLinks.map((link, index) => (
-              <Link key={index} to={link.path}>
+              <Link key={index} to={link.path} className="px-2">
                 {link.name}
               </Link>
             ))}
