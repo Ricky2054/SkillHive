@@ -1,20 +1,29 @@
-import React, { useState } from 'react';
+import Route from './features/Route';
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
+import About from './pages/About';
+import Learning from './pages/Learning';
 import Navbar from './components/Navbar';
-import VideoCard from './components/VideoCard';
-import './App.css';
+import useNavigation from './hooks/useNavigation';
+import Profile from './pages/Profile';
 
 function App() {
-  const [searchTerm, setSearchTerm] = useState('');
+  const { currentPath, navigate } = useNavigation();
 
-  const handleSearch = (term) => {
-    setSearchTerm(term);
-  };
+  if (currentPath === '/') {
+    navigate('/login');
+  }
+
 
   return (
-    <div className="bg-black min-h-screen">
-      <Navbar onSearch={handleSearch} />
-      <div className="pt-16">
-        <VideoCard topics={searchTerm} />
+    <div className="bg-zinc-50 w-screen h-screen flex flex-col flex-1justify-between">
+      <Navbar/>
+      <div className="flex flex-col justify-between overflow-hidden">
+        <Route path="/login"><Login /></Route>
+        <Route path="/dashboard"><Dashboard /></Route>
+        <Route path="/about"><About /></Route>
+        <Route path="/learning"><Learning /></Route>
+        <Route path="/profile"><Profile /></Route>
       </div>
     </div>
   );
