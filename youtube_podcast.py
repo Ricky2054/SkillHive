@@ -1,257 +1,445 @@
-import time
 import streamlit as st
-import googleapiclient.discovery
-import yt_dlp
+import imaplib
+import email
+from email.header import decode_header
+from datetime import datetime, timedelta
 import os
-import google.generativeai as genai
-
 from dotenv import load_dotenv
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain.prompts import ChatPromptTemplate
+from langchain.chains import LLMChain
+import yt_dlp
+from googleapiclient.discovery import build
+import time
+from functools import lru_cache
+import json
+
+# Add to existing imports
+from googleapiclient.errors import HttpError
+from tenacity import retry, stop_after_attempt, wait_exponential
+from langchain.output_parsers import CommaSeparatedListOutputParser
+from typing import List, Dict
 
 # Load environment variables
 load_dotenv()
 
-# Set page config
-st.set_page_config(
-    page_title="Podcast Player",
-    layout="wide"
-)
-
 # Initialize session state
-if 'search_results' not in st.session_state:
-    st.session_state.search_results = []
-if 'saved_playlist' not in st.session_state:
-    st.session_state.saved_playlist = []
+if 'analyzed_emails' not in st.session_state:
+    st.session_state.analyzed_emails = []
+if 'recommendations' not in st.session_state:
+    st.session_state.recommendations = []
+if 'current_page' not in st.session_state:
+    st.session_state.current_page = 0
+if 'quota_usage' not in st.session_state:
+    st.session_state.quota_usage = {
+        'date': datetime.now().strftime('%Y-%m-%d'),
+        'count': 0
+    }
+if 'cached_results' not in st.session_state:
+    st.session_state.cached_results = {}
+if 'page' not in st.session_state:
+    st.session_state.page = 0
 if 'current_playing' not in st.session_state:
     st.session_state.current_playing = None
-if 'autoplay' not in st.session_state:
-    st.session_state.autoplay = False
 
-def setup_apis():
-    """Setup YouTube and Gemini APIs."""
+def extract_email_content(days=7):
+    """Extract emails from Gmail"""
     try:
-        api_service_name = "youtube"
-        api_version = "v3"
-        YOUTUBE_API_KEY = os.getenv('YOUTUBE_API_KEY')
+        email_address = os.getenv('EMAIL_ADDRESS')
+        password = os.getenv('EMAIL_PASSWORD')
         
-        youtube = googleapiclient.discovery.build(
-            api_service_name, 
-            api_version, 
-            developerKey=YOUTUBE_API_KEY
-        )
+        mail = imaplib.IMAP4_SSL('imap.gmail.com')
+        mail.login(email_address, password)
+        mail.select('inbox')
         
-        GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
-        genai.configure(api_key=GOOGLE_API_KEY)
+        date = (datetime.now() - timedelta(days=days)).strftime("%d-%b-%Y")
+        _, messages = mail.search(None, f'(SINCE {date})')
         
-        return youtube
-    except Exception as e:
-        st.error(f"API setup failed: {str(e)}")
-        return None
-
-def search_videos(youtube, query, max_results=5):
-    """Search YouTube podcasts."""
-    try:
-        podcast_query = f"{query} podcast"
+        progress_bar = st.progress(0)
+        total_messages = len(messages[0].split())
         
-        request = youtube.search().list(
-            part="snippet",
-            maxResults=max_results,
-            q=podcast_query,
-            type="video",
-            videoDuration="long",
-            videoDefinition="high",
-            fields="items(id/videoId,snippet(title,description,channelTitle))",
-            order="relevance"
-        )
-        
-        response = request.execute()
-        
-        filtered_results = []
-        for item in response.get('items', []):
-            title = item['snippet']['title'].lower()
-            description = item['snippet']['description'].lower()
+        email_contents = []
+        for i, num in enumerate(messages[0].split()):
+            _, msg = mail.fetch(num, '(RFC822)')
+            email_message = email.message_from_bytes(msg[0][1])
+            content = get_email_text(email_message)
+            if content:
+                email_contents.append(content)
+            progress_bar.progress((i + 1) / total_messages)
             
-            is_podcast = any(keyword in title or keyword in description 
-                           for keyword in ['podcast', 'episode', 'show'])
-            
-            if is_podcast:
-                filtered_results.append(item)
-                
-        return filtered_results[:max_results]
+        mail.logout()
+        return email_contents
+        
     except Exception as e:
-        st.error(f"Error searching podcasts: {str(e)}")
+        st.error(f"Error accessing emails: {str(e)}")
         return []
 
-def get_audio_url(video_id):
-    """Extract audio URL from YouTube video with error handling"""
+def get_email_text(email_message):
+    """Extract text from email message"""
+    if email_message.is_multipart():
+        text_parts = []
+        for part in email_message.walk():
+            if part.get_content_type() == "text/plain":
+                try:
+                    text = part.get_payload(decode=True).decode()
+                    text_parts.append(text)
+                except:
+                    continue
+        return "\n".join(text_parts)
+    else:
+        try:
+            return email_message.get_payload(decode=True).decode()
+        except:
+            return None
+
+def analyze_emails(contents):
+    """Process emails with LLM"""
+    llm = ChatGoogleGenerativeAI(model="gemini-pro")
+    template = """Extract career-related keywords from this email content:
+    {text}
+    Return only comma-separated keywords."""
+    
+    prompt = ChatPromptTemplate.from_template(template)
+    chain = LLMChain(llm=llm, prompt=prompt)
+    
+    all_keywords = set()
+    for content in contents:
+        try:
+            response = chain.run(text=content)
+            keywords = [k.strip() for k in response.split(',')]
+            all_keywords.update(keywords)
+        except Exception as e:
+            st.warning(f"Analysis error: {str(e)}")
+            continue
+    
+    return list(all_keywords)
+
+@lru_cache(maxsize=100)
+def cached_youtube_search(query: str, max_results: int = 3):
+    """Cache YouTube search results"""
+    cache_file = 'youtube_cache.json'
+    
+    # Check file cache first
+    if os.path.exists(cache_file):
+        with open(cache_file, 'r') as f:
+            cache = json.load(f)
+            if query in cache and time.time() - cache[query]['timestamp'] < 86400:
+                return cache[query]['results']
+    
+    # Check quota
+    today = datetime.now().strftime('%Y-%m-%d')
+    if (st.session_state.quota_usage['date'] != today):
+        st.session_state.quota_usage = {'date': today, 'count': 0}
+    
+    if st.session_state.quota_usage['count'] >= 95:  # Safe limit
+        st.warning("Daily quota limit approaching. Using cached results.")
+        return []
+    
     try:
-        ydl_opts = {
-            'format': 'bestaudio[ext=m4a]/bestaudio/best',
-            'extractaudio': True,
-            'quiet': True,
-            'no_warnings': True,
-            'nocheckcertificate': True
+        youtube = build('youtube', 'v3', developerKey=os.getenv('YOUTUBE_API_KEY'))
+        
+        @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
+        def execute_search():
+            request = youtube.search().list(
+                part="snippet",
+                maxResults=max_results,
+                q=f"{query} podcast",
+                type="video",
+                videoDuration="long",
+                fields="items(id/videoId,snippet(title,description,channelTitle))"
+            )
+            return request.execute()
+        
+        response = execute_search()
+        st.session_state.quota_usage['count'] += 1
+        
+        # Cache results
+        if not os.path.exists(cache_file):
+            cache = {}
+        else:
+            with open(cache_file, 'r') as f:
+                cache = json.load(f)
+        
+        cache[query] = {
+            'timestamp': time.time(),
+            'results': response
         }
         
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(f"https://www.youtube.com/watch?v={video_id}", download=False)
-            if not info:
-                return None
-                
-            formats = info.get('formats', [])
-            if not formats:
-                return info.get('url')  # Fallback to direct URL
-                
-            # Filter and validate audio formats
-            audio_formats = []
-            for f in formats:
-                if (f.get('acodec') != 'none' and 
-                    f.get('vcodec') == 'none' and 
-                    isinstance(f.get('abr'), (int, float))):
-                    audio_formats.append(f)
+        with open(cache_file, 'w') as f:
+            json.dump(cache, f)
+        
+        return response
+        
+    except HttpError as e:
+        if e.resp.status in [403, 429]:  # Quota exceeded
+            st.error("YouTube API quota exceeded. Using cached results.")
+            return []
+        raise e
+
+def fetch_recommendations(keywords: list, per_page: int = 3):
+    """Fetch recommendations with proper data structure"""
+    try:
+        youtube = build('youtube', 'v3', developerKey=os.getenv('YOUTUBE_API_KEY'))
+        
+        all_results = []
+        unique_videos = set()
+        
+        for keyword in keywords[:3]:
+            request = youtube.search().list(
+                part="snippet",
+                maxResults=per_page,
+                q=f"{keyword} podcast",
+                type="video",
+                videoDuration="long",
+                fields="items(id/videoId,snippet(title,description,channelTitle))"
+            )
             
-            if audio_formats:
-                # Sort by audio bitrate if available
-                best_audio = sorted(
-                    audio_formats,
-                    key=lambda x: float(x.get('abr', 0) or 0),
-                    reverse=True
-                )[0]
-                return best_audio.get('url')
-                
-            # Fallback to best available format
-            return formats[-1].get('url')
+            response = request.execute()
             
+            for item in response.get('items', []):
+                video_id = item['id']['videoId']
+                if video_id not in unique_videos:
+                    unique_videos.add(video_id)
+                    all_results.append({
+                        'video_id': video_id,
+                        'title': item['snippet']['title'],
+                        'description': item['snippet']['description'],
+                        'channel_title': item['snippet']['channelTitle']
+                    })
+                    
+                if len(all_results) >= per_page:
+                    break
+        
+        return all_results[:per_page]
+        
     except Exception as e:
-        st.error(f"Error extracting audio: {str(e)}")
-        return None
+        st.error(f"Error fetching recommendations: {str(e)}")
+        return []
 
-def add_to_playlist(video):
-    """Add a video to the playlist."""
-    if not any(v['id']['videoId'] == video['id']['videoId'] for v in st.session_state.saved_playlist):
-        st.session_state.saved_playlist.append(video)
-        return True
-    return False
+def get_podcast_recommendations(keywords, max_results=5):
+    """Search YouTube for podcasts"""
+    youtube = build('youtube', 'v3', developerKey=os.getenv('YOUTUBE_API_KEY'))
+    
+    all_results = []
+    for keyword in keywords[:3]:
+        try:
+            request = youtube.search().list(
+                part="snippet",
+                maxResults=max_results,
+                q=f"{keyword} podcast",
+                type="video",
+                videoDuration="long"
+            )
+            response = request.execute()
+            all_results.extend(response.get('items', []))
+        except Exception as e:
+            st.error(f"YouTube API error: {str(e)}")
+    
+    return all_results[:max_results]
 
-def display_audio_player(video, player_id):
-    """Display single audio player with auto-stop previous"""
-    audio_url = get_audio_url(video['id']['videoId'])
-    if audio_url:
-        audio_html = f"""
-            <div id="player-container-{player_id}">
-                <audio id="{player_id}" 
-                       controls 
-                       style="width: 100%"
-                       onplay="stopOtherPlayers(this.id)">
-                    <source src="{audio_url}" type="audio/mp4">
-                    Your browser does not support the audio element.
-                </audio>
-            </div>
-            <script>
-                function stopOtherPlayers(currentPlayerId) {{
-                    document.querySelectorAll('audio').forEach(player => {{
-                        if (player.id !== currentPlayerId) {{
-                            player.pause();
-                            player.currentTime = 0;
-                        }}
-                    }});
-                }}
-            </script>
-        """
-        st.markdown(audio_html, unsafe_allow_html=True)
+def display_podcast(video_id, title):
+    """Display audio player"""
+    try:
+        audio_url = get_audio_url(video_id)
+        if audio_url:
+            st.markdown(f"### {title}")
+            st.audio(audio_url)
+    except Exception as e:
+        st.error(f"Error playing podcast: {str(e)}")
 
-def display_search_results():
-    if not st.session_state.search_results:
-        return
-    
-    st.subheader("Search Results")
-    
-    for idx, video in enumerate(st.session_state.search_results):
-        with st.container():
-            col1, col2, col3 = st.columns([3, 1, 1])
-            
-            with col1:
-                st.write(f"**{video['snippet']['title']}**")
-                st.write(f"Channel: {video['snippet']['channelTitle']}")
-            
-            with col2:
-                player_id = f"player_{video['id']['videoId']}_{int(time.time())}"
-                if st.button("Play", key=f"play_{idx}_{video['id']['videoId']}"):
-                    display_audio_player(video, player_id)
-            
-            with col3:
-                if st.button("Add to Playlist", key=f"add_{video['id']['videoId']}"):
-                    if add_to_playlist(video):
-                        st.success("Added to playlist!")
-                        st.rerun()
-                    else:
-                        st.warning("Already in playlist!")
-            
-            with st.expander("Show Description"):
-                st.write(video['snippet']['description'])
+def get_audio_url(video_id):
+    """Get audio stream URL"""
+    ydl_opts = {
+        'format': 'bestaudio',
+        'quiet': True,
+        'no_warnings': True
+    }
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(f"https://www.youtube.com/watch?v={video_id}", download=False)
+        return info.get('url')
 
-def display_playlist():
-    st.subheader("Your Playlist")
+def display_recommendations(recommendations):
+    """Display YouTube recommendations"""
+    for item in recommendations:
+        video_id = item['id']['videoId']
+        title = item['snippet']['title']
+        display_podcast(video_id, title)
+
+def check_credentials():
+    """Check if all required API keys and credentials are present"""
+    required_vars = ['EMAIL_ADDRESS', 'EMAIL_PASSWORD', 'YOUTUBE_API_KEY']
+    for var in required_vars:
+        if not os.getenv(var):
+            st.error(f"Missing {var}. Please check your .env file.")
+            return False
+    return True
+
+def fetch_and_process_emails(days, batch_size, page):
+    """Process emails and return analysis results"""
+    emails = extract_email_content(days)
+    if not emails:
+        return [], [], [], 0
     
-    if not st.session_state.saved_playlist:
-        st.info("Your playlist is empty. Search for podcasts to add them!")
-        return
+    start_idx = page * batch_size
+    batch_emails = emails[start_idx:start_idx + batch_size]
+    keywords = analyze_emails(batch_emails)
+    podcasts = fetch_recommendations(keywords)
     
-    for idx, video in enumerate(st.session_state.saved_playlist):
-        with st.container():
-            col1, col2, col3 = st.columns([3, 1, 1])
-            
-            with col1:
-                st.write(f"**{video['snippet']['title']}**")
-            
-            with col2:
-                if st.button("Play", key=f"play_{idx}_{video['id']['videoId']}"):
-                    st.session_state.current_playing = idx
-                    st.rerun()
-            
-            with col3:
-                if st.button("Remove", key=f"remove_{idx}_{video['id']['videoId']}"):
-                    if st.session_state.current_playing == idx:
-                        st.session_state.current_playing = None
-                    elif st.session_state.current_playing > idx:
-                        st.session_state.current_playing -= 1
-                    st.session_state.saved_playlist.pop(idx)
-                    st.rerun()
+    return batch_emails, podcasts, keywords, len(emails)
 
 def main():
-    st.title("🎧 Podcast Player")
+    st.title("🎧 Career Podcast Assistant")
     
-    # Setup APIs
-    youtube = setup_apis()
-    if not youtube:
+    if not check_credentials():
         return
     
-    # Search section
-    with st.container():
-        col1, col2 = st.columns([4, 1])
+    with st.expander("📧 Email Analysis"):
+        days = st.slider(
+            "Days to analyze", 
+            1, 30, 7, 
+            key="email_days_slider"
+        )
+        
+        batch_size = st.select_slider(
+            "Emails per page", 
+            options=[5, 10, 15], 
+            value=5,
+            key="batch_size_slider"
+        )
+        
+        col1, col2 = st.columns(2)
         with col1:
-            search_query = st.text_input("Search for podcasts:", key="search_input")
+            if st.button("⬅️ Previous", key="prev_btn"):
+                if st.session_state.page > 0:
+                    st.session_state.page -= 1
+                    st.rerun()
+        
         with col2:
-            if st.button("Search", key="search_button"):
-                if search_query:
-                    results = search_videos(youtube, search_query)
-                    if results:
-                        st.session_state.search_results = results
-                        st.rerun()
+            if st.button("Next ➡️", key="next_btn"):
+                st.session_state.page += 1
+                st.rerun()
+        
+        if st.button("Analyze Emails", key="analyze_btn"):
+            with st.spinner("Analyzing emails and finding podcasts..."):
+                emails, podcasts, keywords, total = fetch_and_process_emails(
+                    days, 
+                    batch_size, 
+                    st.session_state.page
+                )
+                
+                if emails and podcasts:
+                    st.write(f"Processed {len(emails)} emails")
+                    st.write(f"Found {len(keywords)} career-related keywords")
+                    st.write("### 🎧 Recommended Podcasts")
+                    display_audio_cards(podcasts, keywords)
+                else:
+                    st.info("No results found")
+
+    # Display current page info
+    if 'page' in st.session_state:
+        st.caption(f"Page: {st.session_state.page + 1}")
+
+def display_audio_cards(podcasts, keywords=None):
+    """Display podcasts with error handling"""
+    # Add custom CSS
+    st.markdown("""
+        <style>
+        .audio-container {
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        .audio-player {
+            width: 100%;
+            margin: 10px 0;
+        }
+        .keyword-tag {
+            display: inline-block;
+            background-color: #e00404;
+            padding: 2px 8px;
+            margin: 2px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            color: white;
+        }
+        .podcast-card {
+            padding: 15px;
+            border-radius: 10px;
+            background: #f8f9fa;
+            margin-bottom: 20px;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+    # Display keywords
+    if keywords:
+        st.write("🏷️ Keywords Found:")
+        tags_html = " ".join([f'<span class="keyword-tag">{k}</span>' for k in keywords])
+        st.markdown(tags_html, unsafe_allow_html=True)
     
-    # Display search results
-    if st.session_state.search_results:
-        st.markdown("---")
-        display_search_results()
-    
-    # Display playlist
-    st.markdown("---")
-    display_playlist()
-    
-    # Display current playing audio (only if we have a valid current_playing index)
-    if (st.session_state.current_playing is not None and 
-        0 <= st.session_state.current_playing < len(st.session_state.saved_playlist)):
-        st.markdown("---")
-        display_audio_player()
+    # Display audio players
+    cols = st.columns(2)
+    for idx, podcast in enumerate(podcasts):
+        with cols[idx % 2]:
+            try:
+                st.markdown('<div class="podcast-card">', unsafe_allow_html=True)
+                
+                # Safe access to podcast data
+                title = podcast.get('title', 'Untitled Podcast')
+                description = podcast.get('description', 'No description available')
+                channel = podcast.get('channel_title', 'Unknown Channel')
+                video_id = podcast.get('video_id')
+                
+                if not video_id:
+                    continue
+                
+                st.subheader(title)
+                
+                # Get audio URL and create player
+                audio_url = get_audio_url(video_id)
+                if audio_url:
+                    player_id = f"player_{video_id}_{int(time.time())}"
+                    audio_html = f"""
+                        <div class="audio-container">
+                            <audio id="{player_id}" 
+                                   controls 
+                                   class="audio-player"
+                                   onplay="stopOtherPlayers(this.id)">
+                                <source src="{audio_url}" type="audio/mp4">
+                                Your browser does not support the audio element.
+                            </audio>
+                        </div>
+                        <script>
+                            function stopOtherPlayers(currentPlayerId) {{
+                                document.querySelectorAll('audio').forEach(player => {{
+                                    if (player.id !== currentPlayerId) {{
+                                        player.pause();
+                                        player.currentTime = 0;
+                                    }}
+                                }});
+                            }}
+                        </script>
+                    """
+                    st.markdown(audio_html, unsafe_allow_html=True)
+                
+                st.caption(f"🎙️ {channel}")
+                st.write(description[:200] + "...")
+                
+                if keywords:
+                    relevant_keywords = [k for k in keywords 
+                                       if k.lower() in podcast['title'].lower() 
+                                       or k.lower() in podcast['description'].lower()]
+                    if relevant_keywords:
+                        st.markdown("**Related Topics:**")
+                        tags_html = " ".join([f'<span class="keyword-tag">{k}</span>' 
+                                            for k in relevant_keywords])
+                        st.markdown(tags_html, unsafe_allow_html=True)
+                
+                st.markdown('</div>', unsafe_allow_html=True)
+                st.divider()
+            
+            except Exception as e:
+                st.error(f"Error displaying podcast {idx + 1}: {str(e)}")
+                continue
 
 if __name__ == "__main__":
     main()
