@@ -1,11 +1,10 @@
-import 'dotenv/config'
 import mysql from 'mysql2';
 
 // Local development
 const db = mysql.createConnection({
     host: 'localhost',  // or '127.0.0.1'
     user: 'root',
-    password: process.env.DB_PASSWORD,
+    password: "xupbas-qopzar-6vaWto",
     database: 'skillhive',
     port: 3306
 });
