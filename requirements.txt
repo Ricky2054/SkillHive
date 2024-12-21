@@ -1,2 +1,24 @@
+# Core dependencies
+streamlit
+python-dotenv
 requests
+google-api-python-client
+google-auth-oauthlib
+google-auth-httplib2
+
+# Email handling
 imapclient
+imaplib
+
+# YouTube integration
+yt-dlp
+youtube-search-python
+
+# AI/ML
+langchain
+langchain-google-genai
+langchain-community
+google-generativeai
+
+# Utilities
+tenacity
