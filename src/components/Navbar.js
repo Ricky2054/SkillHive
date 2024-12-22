@@ -2,10 +2,6 @@ import Link from '../features/Link';
 
 const navLinks = [
   {
-    path: '/login',
-    name: 'Login'
-  },
-  {
     path: '/dashboard',
     name: 'Dashboard'
   },

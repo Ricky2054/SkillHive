@@ -4,39 +4,42 @@ import Dashboard from './pages/Dashboard';
 import About from './pages/About';
 import Learning from './pages/Learning';
 import Navbar from './components/Navbar';
-import useNavigation from './hooks/useNavigation';
+// import useNavigation from './hooks/useNavigation';
 import Profile from './pages/Profile';
-import { AuthProvider } from './context/AuthContext';
-import ProtectedRoute from './components/ProtectedRoute';
+// import { useEffect } from 'react';
 
 function App() {
-  const { currentPath, navigate } = useNavigation();
+  // const { currentPath, navigate } = useNavigation();
 
-  if (currentPath === '/') {
-    navigate('/login');
-  }
+  // Check for UUID in localStorage when app loads
+  // useEffect(() => {
+  //   const authToken = window.localStorage.getItem('authToken')
+  //   console.log(authToken)
+  //   if (authToken && authToken !== 'null') {
+  //     navigate('/dashboard')
+  //   }
+
+  // }, [currentPath, navigate]);
 
   return (
-    <AuthProvider>
-      <div className="min-h-screen w-full flex flex-col">
-        <Navbar />
-        <main className="flex-1 overflow-auto">
-          <Route path="/login"><Login /></Route>
-          <Route path="/dashboard">
-            <ProtectedRoute><Dashboard /></ProtectedRoute>
-          </Route>
-          <Route path="/about">
-            <ProtectedRoute><About /></ProtectedRoute>
-          </Route>
-          <Route path="/learning">
-            <ProtectedRoute><Learning /></ProtectedRoute>
-          </Route>
-          <Route path="/profile">
-            <ProtectedRoute><Profile /></ProtectedRoute>
-          </Route>
-        </main>
-      </div>
-    </AuthProvider>
+    <div className="min-h-screen w-full flex flex-col">
+      <Navbar />
+      <main className="flex-1 overflow-auto">
+        <Route path="/"><Login /></Route>
+        <Route path="/dashboard">
+          <Dashboard />
+        </Route>
+        <Route path="/about">
+          <About />
+        </Route>
+        <Route path="/learning">
+          <Learning />
+        </Route>
+        <Route path="/profile">
+          <Profile />
+        </Route>
+      </main>
+    </div>
   );
 }
 

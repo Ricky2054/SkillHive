@@ -66,6 +66,22 @@ userRouter.get('/users/:id', (req, res) => {
     );
 });
 
+// Delete all users (be careful with this in production!)
+userRouter.delete('/all', (req, res) => {
+    db.query('DELETE FROM Users WHERE EXISTS (SELECT 1 FROM (SELECT * FROM Users) AS u)', (err, results) => {
+        if (err) {
+            console.error('Error deleting users:', err.message);
+            res.status(500).send('Error deleting users');
+        } else {
+            res.status(200).json({
+                message: 'All users deleted successfully',
+                deletedCount: results.affectedRows
+            });
+        }
+    });
+});
+
+
 userRouter.post('/signup', async (req, res) => {
     const { email, password, full_name } = req.body;
     const user_id = uuidv4();
@@ -210,21 +226,6 @@ userRouter.get('/profile', auth, (req, res) => {
             }
         }
     );
-});
-
-// Delete all users (be careful with this in production!)
-userRouter.delete('/all', (req, res) => {
-    db.query('DELETE FROM Users WHERE EXISTS (SELECT 1 FROM (SELECT * FROM Users) AS u)', (err, results) => {
-        if (err) {
-            console.error('Error deleting users:', err.message);
-            res.status(500).send('Error deleting users');
-        } else {
-            res.status(200).json({
-                message: 'All users deleted successfully',
-                deletedCount: results.affectedRows
-            });
-        }
-    });
 });
 
 export default userRouter;
