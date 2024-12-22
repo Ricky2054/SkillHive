@@ -3,6 +3,7 @@ import { AiOutlineLoading } from "react-icons/ai";
 import Input from "./Input";
 import { FaArrowsRotate } from "react-icons/fa6";
 import useNavigation from "../hooks/useNavigation";
+import { useAuth } from '../context/AuthContext';
 
 const LoginFeature = () => {
     const [isSignUp, setIsSignUp] = useState(true);
@@ -10,12 +11,20 @@ const LoginFeature = () => {
     const [opacity, setOpacity] = useState(false);
 
     const { navigate } = useNavigation();
+    const { login, isAuthenticated } = useAuth();
+
+    useEffect(() => {
+        if (isAuthenticated) {
+            navigate('/dashboard');
+        }
+    }, [isAuthenticated, navigate]);
 
     const handleSubmit = (e) => {
         e.preventDefault();
         if (isSignUp) {
             const user = {
-                email: e.target.email.value,
+                email: e.target.Email.value,
+                username: e.target.username.value,
                 password: e.target.password.value,
             };
             console.log(user)
@@ -31,15 +40,26 @@ const LoginFeature = () => {
             };
             console.log(user)
         }
+        login();
+        navigate('/dashboard');
     };
 
     const InputsFields = [
+        {
+            name: "username",
+            placeholder: "Username",
+            minlength: 3,
+            maxlength: 20,
+            required: true,
+            showOnLogin: false,
+        },
         {
             name: "Email",
             placeholder: "Email",
             minlength: null,
             maxlength: null,
             required: true,
+            showOnLogin: true,
         },
         {
             name: "password",
@@ -47,6 +67,7 @@ const LoginFeature = () => {
             minlength: null,
             maxlength: null,
             required: true,
+            showOnLogin: true,
         },
     ];
 
@@ -57,11 +78,14 @@ const LoginFeature = () => {
     }
 
     let Inputs = InputsFields.map((data, i) => {
-        const ErrorObject = ErrorsMap.get(data?.name)
-        return (
-            <Input key={i} data={data} ErrorObject={ErrorObject} />
-        );
-    });
+        const ErrorObject = ErrorsMap.get(data?.name);
+        if (isSignUp || data.showOnLogin) {
+            return (
+                <Input key={i} data={data} ErrorObject={ErrorObject} />
+            );
+        }
+        return null;
+    }).filter(Boolean);
 
     if (results.isError) {
         console.log(results.isError)
