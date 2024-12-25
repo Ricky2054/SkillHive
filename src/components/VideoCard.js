@@ -2,22 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { getVideos } from '../api/getVideos';
 import VideoModal from './VideoModal';
 
-function VideoCard({ topics: initialTopics }) {
+function VideoCard({ topics }) {
   const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState(null);
-  const [topics, setTopics] = useState(initialTopics || '');
 
   useEffect(() => {
     const searchVideos = async () => {
-      if (!initialTopics || initialTopics.trim() === '') {
+      if (!topics || topics.trim() === '') {
         setVideos([]);
         return;
       }
 
       setLoading(true);
       try {
-        const results = await getVideos(initialTopics);
+        const results = await getVideos(topics);
         setVideos(results);
       } catch (error) {
         console.error('Error fetching videos:', error);
@@ -28,7 +27,7 @@ function VideoCard({ topics: initialTopics }) {
     };
 
     searchVideos();
-  }, [initialTopics]);
+  }, [topics]);
 
   const handleVideoClick = (e, video) => {
     e.preventDefault();
@@ -41,14 +40,14 @@ function VideoCard({ topics: initialTopics }) {
     return <div className="text-center text-xl text-gray-600 font-semibold pt-10">Loading videos...</div>;
   }
 
-  if (!initialTopics || initialTopics.trim() === '') {
+  if (!topics || topics.trim() === '') {
     return <div className="text-center text-xl text-gray-600 font-semibold pt-10">Enter a topic to search for videos</div>;
   }
 
   if (!videos || videos.length === 0) {
     return (
       <div className="text-center text-xl text-gray-600 font-semibold pt-10">
-        No videos found for "{initialTopics}". Try a different search term.
+        No videos found for "{topics}". Try a different search term.
       </div>
     );
   }

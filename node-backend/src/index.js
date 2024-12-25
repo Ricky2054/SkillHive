@@ -1,28 +1,24 @@
-const express = require('express');
-const cors = require('cors');
-const { getSubtitles } = require('youtube-caption-extractor');
+import './DB/db.js';
+import express from 'express';
+import userRouter from './routes/user.js';
+import savedVideoRouter from './routes/saved_video.js';
 
+// Create Express app
 const app = express();
-const port = 3001;
-
-app.use(cors())
 app.use(express.json());
+app.use('/user', userRouter);
+app.use(savedVideoRouter);
 
-app.get('/api/subtitles', async (req, res) => {
-  const { videoID, lang = 'en' } = req.query;
-  if (typeof videoID !== 'string') {
-    return res.status(400).json({ error: 'Invalid videoID parameter' });
-  }
-  try {
-    const subtitles = await getSubtitles({ videoID, lang });
-    const subtitleText = subtitles.map((subtitle) => subtitle.text).join(' ');
-    res.status(200).json(subtitleText);
-  } catch (error) {
-    console.error('Error fetching subtitles:', error);
-    res.status(500).json({ error: 'Failed to fetch subtitles' });
-  }
+
+// Example route
+app.get('/', (req, res) => {
+    res.send('Welcome to the Express server!');
 });
 
-app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
-}); 
+// Start the server
+const PORT = 8080;
+app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+});
+
+export default app;

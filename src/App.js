@@ -4,27 +4,41 @@ import Dashboard from './pages/Dashboard';
 import About from './pages/About';
 import Learning from './pages/Learning';
 import Navbar from './components/Navbar';
-import useNavigation from './hooks/useNavigation';
+// import useNavigation from './hooks/useNavigation';
 import Profile from './pages/Profile';
+// import { useEffect } from 'react';
 
 function App() {
-  const { currentPath, navigate } = useNavigation();
+  // const { currentPath, navigate } = useNavigation();
 
-  if (currentPath === '/') {
-    navigate('/login');
-  }
+  // Check for UUID in localStorage when app loads
+  // useEffect(() => {
+  //   const authToken = window.localStorage.getItem('authToken')
+  //   console.log(authToken)
+  //   if (authToken && authToken !== 'null') {
+  //     navigate('/dashboard')
+  //   }
 
+  // }, [currentPath, navigate]);
 
   return (
-    <div className="bg-zinc-50 w-screen h-screen flex flex-col flex-1justify-between">
-      <Navbar/>
-      <div className="flex flex-col justify-between overflow-hidden">
-        <Route path="/login"><Login /></Route>
-        <Route path="/dashboard"><Dashboard /></Route>
-        <Route path="/about"><About /></Route>
-        <Route path="/learning"><Learning /></Route>
-        <Route path="/profile"><Profile /></Route>
-      </div>
+    <div className="min-h-screen w-full flex flex-col">
+      <Navbar />
+      <main className="flex-1 overflow-auto">
+        <Route path="/"><Login /></Route>
+        <Route path="/dashboard">
+          <Dashboard />
+        </Route>
+        <Route path="/about">
+          <About />
+        </Route>
+        <Route path="/learning">
+          <Learning />
+        </Route>
+        <Route path="/profile">
+          <Profile />
+        </Route>
+      </main>
     </div>
   );
 }

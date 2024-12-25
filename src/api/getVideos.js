@@ -3,7 +3,9 @@ import axios from 'axios';
 
 export async function getVideos(query, method = '', maxResults = 12) {
   try {
-    const searchQuery = method ? `${query} ${method}` : query;
+    // const searchQuery = method ? `${query} ${method}` : query;
+    const language = 'Hindi';
+    const searchQuery = `${language}" following topics: ${query}`
     
     const response = await axios.get('https://www.googleapis.com/youtube/v3/search', {
       params: {

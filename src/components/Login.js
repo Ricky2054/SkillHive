@@ -3,43 +3,72 @@ import { AiOutlineLoading } from "react-icons/ai";
 import Input from "./Input";
 import { FaArrowsRotate } from "react-icons/fa6";
 import useNavigation from "../hooks/useNavigation";
+// import { useAuth } from '../context/AuthContext';
+import { useLoginMutation, useSignupMutation } from "../store";
+
 
 const LoginFeature = () => {
     const [isSignUp, setIsSignUp] = useState(true);
-    const [results, setResults] = useState({ isLoading: false, isSuccess: true, isError: false, error: null });
     const [opacity, setOpacity] = useState(false);
-
+    
+    const [login, { isLoading: isLoginLoading, error: loginError }] = useLoginMutation();
+    const [signup, { isLoading: isRegisterLoading, error: registerError }] = useSignupMutation();
+    
     const { navigate } = useNavigation();
+    // const authToken =window.localStorage.getItem('authToken')
+    
+    // if(authToken) {
+    //     navigate('/dashboard')
+    // };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        if (isSignUp) {
-            const user = {
-                email: e.target.email.value,
-                password: e.target.password.value,
-            };
-            console.log(user)
-        } else if (!isSignUp) {
-            
-            const isValidEmail = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(e.target.Email.value);
-            if (!isValidEmail) {
-                throw new Error('Please enter a valid email address');
+        try {
+            if (isSignUp) {
+                const userData = {
+                    email: e.target.Email.value,
+                    username: e.target.username.value,
+                    password: e.target.password.value,
+                };
+                const result = await signup(userData);
+                console.log(result)
+                localStorage.setItem('authToken', result.token);
+                navigate('/dashboard');
+            } else {
+                const isValidEmail = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(e.target.Email.value);
+                if (!isValidEmail) {
+                    throw new Error('Please enter a valid email address');
+                }
+                const userData = {
+                    email: e.target.Email.value,
+                    password: e.target.password.value,
+                };
+                const result = await login(userData);
+                console.log(result)
+                localStorage.setItem('authToken', result.token);
+                navigate('/dashboard');
             }
-            const user = {
-                email: e.target.Email.value,
-                password: e.target.password.value,
-            };
-            console.log(user)
+        } catch (err) {
+            console.error('Failed:', err);
         }
     };
 
     const InputsFields = [
+        {
+            name: "username",
+            placeholder: "Username",
+            minlength: 3,
+            maxlength: 20,
+            required: true,
+            showOnLogin: false,
+        },
         {
             name: "Email",
             placeholder: "Email",
             minlength: null,
             maxlength: null,
             required: true,
+            showOnLogin: true,
         },
         {
             name: "password",
@@ -47,26 +76,29 @@ const LoginFeature = () => {
             minlength: null,
             maxlength: null,
             required: true,
+            showOnLogin: true,
         },
     ];
 
     let ErrorsMap = new Map();
     let ErrorsMsg = "An unexpected error occurred.";
-    if (results?.isError) {
-        console.log(results)
+    if (loginError || registerError) {
+        console.log(loginError || registerError)
     }
 
     let Inputs = InputsFields.map((data, i) => {
-        const ErrorObject = ErrorsMap.get(data?.name)
-        return (
-            <Input key={i} data={data} ErrorObject={ErrorObject} />
-        );
-    });
+        const ErrorObject = ErrorsMap.get(data?.name);
+        if (isSignUp || data.showOnLogin) {
+            return (
+                <Input key={i} data={data} ErrorObject={ErrorObject} />
+            );
+        }
+        return null;
+    }).filter(Boolean);
 
-    if (results.isError) {
-        console.log(results.isError)
-    }
-    
+    const isLoading = isLoginLoading || isRegisterLoading;
+    const error = loginError || registerError;
+
     useEffect(() => {
         const opacityPause = setTimeout(() => {
             setOpacity(true)
@@ -83,7 +115,7 @@ const LoginFeature = () => {
                 {isSignUp ? "Create your account" : "Login to your account"}
             </div>
             <div className="p-2 text-[#3399ff] text-sm ">
-                {results.isError && ErrorsMsg}
+                {error && error.data?.message}
             </div>
             <form
                 onSubmit={handleSubmit}
@@ -94,7 +126,7 @@ const LoginFeature = () => {
                     className="flex justify-between items-center px-4 bg-[#eff3f4] rounded-full w-112 h-12 text-base font-semibold text-[#3399ff] m-2 mt-12 border-[1px] border-[#eff3f4] outline-none w-full"
                 >
                     <span className="flex-grow text-center">
-                        {results?.isLoading ? (
+                        {isLoading ? (
                             <AiOutlineLoading className="animate-spin text-2xl inline" />
                         ) : (
                             isSignUp ? 'Sign Up' : 'Login'

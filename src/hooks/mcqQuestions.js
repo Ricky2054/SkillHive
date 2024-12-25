@@ -8,7 +8,7 @@ export async function generateMCQs(query) {
         {
           "parts": [
             {
-              "text": `Generate 10 multiple choice questions about ${query}. Each question should have 4 options (A, B, C, D) and indicate the correct answer. Format the response as a JSON array of objects, where each object has properties: "question", "options" (array of 4 strings), and "correctAnswer" (index 0-3).`
+              "text": `Generate 5 multiple choice questions about ${query}. Each question should have 4 options (A, B, C, D) and indicate the correct answer. Format the response as a JSON array of objects, where each object has properties: "question", "options" (array of 4 strings), and "correctAnswer" (index 0-3).`
             }
           ]
         }
